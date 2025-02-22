@@ -5,6 +5,7 @@ const Provider = require('./Provider'); // Corregido el nombre del modelo
 const Machinery = sequelize.define('Machinery', {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   name: { type: DataTypes.STRING, allowNull: false },
+  brand: { type: DataTypes.STRING, allowNull: false }, // Nuevo campo marca
   location: { type: DataTypes.STRING, allowNull: false },
   description: { type: DataTypes.TEXT, allowNull: true },
   rental_price: { type: DataTypes.FLOAT, allowNull: false },

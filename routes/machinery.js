@@ -1,8 +1,7 @@
 const express = require('express');
-const { Op } = require('sequelize');
 const router = express.Router();
 const Machinery = require('../models/Machinery');
-const Provider = require('../models/Provider'); // Importamos el modelo de Provider
+const Provider = require('../models/Provider');
 
 /**
  * @swagger
@@ -11,67 +10,9 @@ const Provider = require('../models/Provider'); // Importamos el modelo de Provi
  *     description: Operaciones relacionadas con la maquinaria
  */
 
-/**
- * @swagger
- * /machinery:
- *   post:
- *     tags:
- *       - Machinery
- *     summary: Crear nueva maquinaria
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               location:
- *                 type: string
- *               description:
- *                 type: string
- *               rental_price:
- *                 type: number
- *               image_code:
- *                 type: string
- *               state:
- *                 type: boolean
- *               provider_id:
- *                 type: string
- *                 format: uuid
- *     responses:
- *       201:
- *         description: Maquinaria creada exitosamente
- *       400:
- *         description: Datos inválidos o proveedor no encontrado
- *       500:
- *         description: Error al crear la maquinaria
- */
-router.post('/', async (req, res) => {
-  try {
-    const { name, location, description, rental_price, image_code, state, provider_id } = req.body;
-    
-    if (!name || !location || !rental_price || !provider_id) {
-      return res.status(400).json({ error: 'Faltan campos obligatorios' });
-    }
-
-    // Verificar si el provider_id existe en la base de datos
-    const providerExists = await Provider.findByPk(provider_id);
-    if (!providerExists) {
-      return res.status(400).json({ error: 'El proveedor especificado no existe' });
-    }
-
-    const newMachinery = await Machinery.create({ 
-      name, location, description, rental_price, image_code, state, provider_id 
-    });
-
-    res.status(201).json(newMachinery);
-  } catch (error) {
-    res.status(500).json({ error: 'Error al crear maquinaria', details: error.message });
-  }
-});
-
+// ==========================
+// 🔹 GET: Obtener maquinarias
+// ==========================
 /**
  * @swagger
  * /machinery:
@@ -80,10 +21,8 @@ router.post('/', async (req, res) => {
  *       - Machinery
  *     summary: Obtener todas las maquinarias
  *     responses:
- *       200:
- *         description: Lista de maquinarias
- *       500:
- *         description: Error al obtener maquinarias
+ *       200: { description: Lista de maquinarias }
+ *       500: { description: Error al obtener maquinarias }
  */
 router.get('/', async (req, res) => {
   try {
@@ -96,56 +35,100 @@ router.get('/', async (req, res) => {
 
 /**
  * @swagger
- * /machinery/{id}:
- *   put:
+ * /machinery/with-provider:
+ *   get:
  *     tags:
  *       - Machinery
- *     summary: Actualizar maquinaria por su ID
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         description: ID de la maquinaria a actualizar
- *         schema:
- *           type: string
+ *     summary: Obtener todas las maquinarias junto con su proveedor
+ *     responses:
+ *       200: { description: Lista de maquinarias con su proveedor }
+ *       500: { description: Error al obtener maquinarias }
+ */
+router.get('/with-provider', async (req, res) => {
+  try {
+    const machinery = await Machinery.findAll({
+      include: [{ model: Provider, attributes: ['id', 'name', 'email', 'phoneNumber', 'rating'] }]
+    });
+    res.status(200).json(machinery);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener maquinarias', details: error.message });
+  }
+});
+
+// ==========================
+// 🔹 POST: Crear maquinarias
+// ==========================
+/**
+ * @swagger
+ * /machinery/bulk:
+ *   post:
+ *     tags:
+ *       - Machinery
+ *     summary: Crear múltiples maquinarias
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               location:
- *                 type: string
- *               description:
- *                 type: string
- *               rental_price:
- *                 type: number
- *               image_code:
- *                 type: string
- *               state:
- *                 type: boolean
- *               provider_id:
- *                 type: string
- *                 format: uuid
+ *             type: array
+ *             items:
+ *               type: object
+ *               properties:
+ *                 name: { type: string }
+ *                 brand: { type: string }
+ *                 location: { type: string }
+ *                 description: { type: string }
+ *                 rental_price: { type: number }
+ *                 image_code: { type: string }
+ *                 state: { type: boolean }
+ *                 provider_id: { type: string, format: uuid }
  *     responses:
- *       200:
- *         description: Maquinaria actualizada exitosamente
- *       400:
- *         description: Datos inválidos o proveedor no encontrado
- *       404:
- *         description: Maquinaria no encontrada
- *       500:
- *         description: Error al actualizar maquinaria
+ *       201: { description: Maquinarias creadas exitosamente }
+ *       400: { description: Datos inválidos o proveedor no encontrado }
+ *       500: { description: Error al crear maquinarias }
+ */
+router.post('/bulk', async (req, res) => {
+  try {
+    const machineryData = req.body;
+    if (!Array.isArray(machineryData) || machineryData.length === 0) {
+      return res.status(400).json({ error: 'Debe enviar un arreglo de maquinarias' });
+    }
+
+    for (let data of machineryData) {
+      const { name, brand, location, rental_price, provider_id } = data;
+      if (!name || !brand || !location || !rental_price || !provider_id) {
+        return res.status(400).json({ error: 'Faltan campos obligatorios' });
+      }
+
+      const providerExists = await Provider.findByPk(provider_id);
+      if (!providerExists) {
+        return res.status(400).json({ error: `Proveedor con ID ${provider_id} no existe` });
+      }
+    }
+
+    const newMachinery = await Machinery.bulkCreate(machineryData);
+    res.status(201).json(newMachinery);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al crear maquinarias', details: error.message });
+  }
+});
+
+// ==========================
+// 🔹 PUT: Actualizar maquinaria
+// ==========================
+/**
+ * @swagger
+ * /machinery/{id}:
+ *   put:
+ *     tags:
+ *       - Machinery
+ *     summary: Actualizar maquinaria por su ID
  */
 router.put('/:id', async (req, res) => {
   try {
-    const { name, location, description, rental_price, image_code, state, provider_id } = req.body;
-    
+    const { name, brand, location, description, rental_price, image_code, state, provider_id } = req.body;
+
     if (provider_id) {
-      // Verificar si el nuevo provider_id existe en la base de datos
       const providerExists = await Provider.findByPk(provider_id);
       if (!providerExists) {
         return res.status(400).json({ error: 'El proveedor especificado no existe' });
@@ -153,7 +136,7 @@ router.put('/:id', async (req, res) => {
     }
 
     const [updated] = await Machinery.update(
-      { name, location, description, rental_price, image_code, state, provider_id },
+      { name, brand, location, description, rental_price, image_code, state, provider_id },
       { where: { id: req.params.id } }
     );
 
@@ -167,6 +150,9 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+// ==========================
+// 🔹 DELETE: Eliminar maquinaria
+// ==========================
 /**
  * @swagger
  * /machinery/{id}:
@@ -174,20 +160,6 @@ router.put('/:id', async (req, res) => {
  *     tags:
  *       - Machinery
  *     summary: Eliminar maquinaria por su ID
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         description: ID de la maquinaria a eliminar
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Maquinaria eliminada exitosamente
- *       404:
- *         description: Maquinaria no encontrada
- *       500:
- *         description: Error al eliminar maquinaria
  */
 router.delete('/:id', async (req, res) => {
   try {
@@ -200,6 +172,49 @@ router.delete('/:id', async (req, res) => {
     res.status(200).json({ message: 'Maquinaria eliminada exitosamente' });
   } catch (error) {
     res.status(500).json({ error: 'Error al eliminar maquinaria', details: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /machinery/bulk:
+ *   delete:
+ *     tags:
+ *       - Machinery
+ *     summary: Eliminar múltiples maquinarias
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["uuid1", "uuid2"]
+ *     responses:
+ *       200: { description: Maquinarias eliminadas exitosamente }
+ *       400: { description: No se enviaron IDs válidos }
+ *       500: { description: Error al eliminar maquinarias }
+ */
+router.delete('/bulk', async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'Debe enviar un arreglo de IDs' });
+    }
+
+    const deletedCount = await Machinery.destroy({ where: { id: ids } });
+
+    if (deletedCount === 0) {
+      return res.status(404).json({ error: 'No se encontraron maquinarias con los IDs proporcionados' });
+    }
+
+    res.status(200).json({ message: `Se eliminaron ${deletedCount} maquinarias` });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al eliminar maquinarias', details: error.message });
   }
 });
 

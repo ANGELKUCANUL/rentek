@@ -61,6 +61,68 @@ router.post('/', async (req, res) => {
 
 /**
  * @swagger
+ * /providers/bulk:
+ *   post:
+ *     tags:
+ *       - Provider
+ *     summary: Crear múltiples proveedores
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               type: object
+ *               properties:
+ *                 name:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                 password:
+ *                   type: string
+ *                 phoneNumber:
+ *                   type: string
+ *                 rating:
+ *                   type: number
+ *     responses:
+ *       200:
+ *         description: Proveedores creados exitosamente
+ *       400:
+ *         description: Algunos correos electrónicos ya están en uso
+ *       500:
+ *         description: Error al crear los proveedores
+ */
+router.post('/bulk', async (req, res) => {
+    try {
+        const providers = req.body; // Suponiendo que envían un array de proveedores
+
+        if (!Array.isArray(providers) || providers.length === 0) {
+            return res.status(400).json({ error: 'Se requiere un array de proveedores' });
+        }
+
+        // Extraer los correos electrónicos para verificar duplicados
+        const emails = providers.map(p => p.email);
+        const existingProviders = await Provider.findAll({ where: { email: emails } });
+
+        if (existingProviders.length > 0) {
+            const existingEmails = existingProviders.map(p => p.email);
+            return res.status(400).json({ 
+                error: 'Algunos correos electrónicos ya están en uso', 
+                emailsEnUso: existingEmails 
+            });
+        }
+
+        // Insertar los proveedores en bloque
+        const newProviders = await Provider.bulkCreate(providers);
+        res.status(200).json(newProviders);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al crear los proveedores', details: error.message });
+    }
+});
+
+/**
+ * @swagger
  * /providers:
  *   get:
  *     tags:
@@ -80,6 +142,46 @@ router.get('/', async (req, res) => {
         res.status(500).json({ error: 'Error al obtener proveedores', details: error.message });
     }
 });
+
+
+/**
+ * @swagger
+ * /providers/{id}:
+ *   get:
+ *     tags:
+ *       - Provider
+ *     summary: Obtener un proveedor por ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: UUID del proveedor a obtener
+ *     responses:
+ *       200:
+ *         description: Proveedor encontrado
+ *       404:
+ *         description: Proveedor no encontrado
+ *       500:
+ *         description: Error al obtener el proveedor
+ */
+router.get('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const provider = await Provider.findByPk(id);
+
+        if (!provider) {
+            return res.status(404).json({ error: 'Proveedor no encontrado' });
+        }
+
+        res.status(200).json(provider);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener el proveedor', details: error.message });
+    }
+});
+
 
 /**
  * @swagger
