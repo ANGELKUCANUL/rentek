@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const bcrypt = require('bcrypt');
 
 /**
  * @swagger
@@ -29,7 +30,7 @@ const User = require('../models/User');
  *               password:
  *                 type: string
  *               phoneNumber:
- *                 type: number
+ *                 type: string
  *     responses:
  *       200:
  *         description: Usuario creado exitosamente
@@ -48,7 +49,10 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'El correo electrónico ya está en uso' });
     }
 
-    const newUser = await User.create({ name, email, password, phoneNumber });
+    // Hashear la contraseña
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = await User.create({ name, email, password: hashedPassword, phoneNumber });
     res.status(200).json(newUser);
   } catch (error) {
     res.status(500).json({ error: 'Error al crear el usuario' });
@@ -88,7 +92,8 @@ router.get('/', async (req, res) => {
  *         required: true
  *         description: ID del usuario a actualizar
  *         schema:
- *           type: integer
+ *           type: string
+ *           format: uuid
  *     requestBody:
  *       required: true
  *       content:
@@ -103,7 +108,7 @@ router.get('/', async (req, res) => {
  *               password:
  *                 type: string
  *               phoneNumber:
- *                 type: number
+ *                 type: string
  *     responses:
  *       200:
  *         description: Usuario actualizado exitosamente
@@ -115,10 +120,14 @@ router.get('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { name, email, password, phoneNumber } = req.body;
-    const updatedUser = await User.update(
-      { name, email, password, phoneNumber },
-      { where: { id: req.params.id } }
-    );
+
+    // Hashear la nueva contraseña si es que se está actualizando
+    const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
+
+    const updateData = { name, email, phoneNumber };
+    if (hashedPassword) updateData.password = hashedPassword;
+
+    const updatedUser = await User.update(updateData, { where: { id: req.params.id } });
     if (updatedUser[0] === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
@@ -140,7 +149,8 @@ router.put('/:id', async (req, res) => {
  *         required: true
  *         description: ID del usuario a eliminar
  *         schema:
- *           type: integer
+ *           type: string
+ *           format: uuid
  *     responses:
  *       200:
  *         description: Usuario eliminado exitosamente
@@ -164,48 +174,47 @@ router.delete('/:id', async (req, res) => {
 /**
  * @swagger
  * /users/login:
- *   get:
- *     summary: Obtener los datos del usuario por correo y contraseña
+ *   post:
+ *     summary: Iniciar sesión con email y contraseña
  *     tags: [Users]
- *     parameters:
- *       - in: query
- *         name: email
- *         required: true
- *         description: Correo electrónico del usuario
- *         schema:
- *           type: string
- *       - in: query
- *         name: password
- *         required: true
- *         description: Contraseña del usuario
- *         schema:
- *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
  *     responses:
  *       200:
- *         description: Datos del usuario
- *       404:
- *         description: Usuario no encontrado o contraseña incorrecta
+ *         description: Datos del usuario autenticado
+ *       401:
+ *         description: Credenciales incorrectas
  *       500:
- *         description: Error al obtener el usuario
+ *         description: Error en la autenticación
  */
-router.get('/login', async (req, res) => {
-  const { email, password } = req.query;
-  
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
   try {
     const user = await User.findOne({ where: { email } });
-    
+
     if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
+      return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
-    
-    // Verificar la contraseña (puedes usar bcrypt para comparar contraseñas de manera más segura)
-    if (user.password !== password) {
-      return res.status(404).json({ error: 'Contraseña incorrecta' });
+
+    // Verificar la contraseña con bcrypt
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
-    
+
     res.status(200).json(user);
   } catch (error) {
-    res.status(500).json({ error: 'Error al obtener los datos del usuario' });
+    res.status(500).json({ error: 'Error en la autenticación' });
   }
 });
 

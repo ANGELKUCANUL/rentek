@@ -11,6 +11,26 @@ const Reservation = sequelize.define('Reservation', {
     allowNull: false,
     primaryKey: true
   },
+  userId: { // Clave foránea para User
+    type: DataTypes.UUID, // Asegurar que es UUID si el id de User es UUID
+    allowNull: false,
+    references: {
+      model: User,
+      key: 'id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'SET NULL'
+  },
+  machineryId: { // Clave foránea para Machinery
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: Machinery,
+      key: 'id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'SET NULL'
+  },
   rental_start: { type: DataTypes.DATE, allowNull: false },
   rental_end: { 
     type: DataTypes.DATE, 
@@ -35,12 +55,19 @@ const Reservation = sequelize.define('Reservation', {
   },
   provider_id: {  
     type: DataTypes.UUID,
-    allowNull: false
+    allowNull: false,
+    references: {
+      model: Provider,
+      key: 'id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'SET NULL'
   }
 });
 
+// Definir relaciones correctamente
 Reservation.belongsTo(User, { foreignKey: 'userId' });
 Reservation.belongsTo(Machinery, { foreignKey: 'machineryId' });
-Machinery.belongsTo(Provider, { foreignKey: 'provider_id' });
+Reservation.belongsTo(Provider, { foreignKey: 'provider_id' });
 
 module.exports = Reservation;
