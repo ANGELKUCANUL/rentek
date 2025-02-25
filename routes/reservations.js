@@ -3,6 +3,7 @@ const router = express.Router();
 const Reservation = require('../models/Reservation');
 const User = require('../models/User');
 const Machinery = require('../models/Machinery');
+const qrcode = require('qrcode');
 
 /**
  * @swagger
@@ -31,7 +32,7 @@ const Machinery = require('../models/Machinery');
  *               rental_end:
  *                 type: string
  *                 format: date-time
- *               adress_entrega:
+ *               address_entrega:
  *                 type: string
  *               userId:
  *                 type: string
@@ -39,6 +40,15 @@ const Machinery = require('../models/Machinery');
  *               machineryId:
  *                 type: string
  *                 format: uuid
+ *               price:
+ *                 type: number
+ *                 format: float
+ *               payment_status:
+ *                 type: string
+ *                 enum: [pendiente, pagado, rechazado]
+ *               delivery_status:
+ *                 type: string
+ *                 enum: [pendiente, en camino, entregado, cancelado]
  *     responses:
  *       201:
  *         description: Reserva creada exitosamente
@@ -49,10 +59,10 @@ const Machinery = require('../models/Machinery');
  */
 router.post('/', async (req, res) => {
   try {
-    const { rental_start, rental_end, adress_entrega, userId, machineryId } = req.body;
+    const { rental_start, rental_end, address_entrega, userId, machineryId, price, payment_status, delivery_status } = req.body;
 
     // Verificar que los campos obligatorios estén presentes
-    if (!rental_start || !rental_end || !adress_entrega || !userId || !machineryId) {
+    if (!rental_start || !rental_end || !address_entrega || !userId || !machineryId || !price || !payment_status || !delivery_status) {
       return res.status(400).json({ error: 'Faltan campos obligatorios' });
     }
 
@@ -64,12 +74,20 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Usuario o maquinaria no encontrados' });
     }
 
+    // Obtener el provider_id de la maquinaria
+    const provider_id = machinery.provider_id;
+
+    // Crear la nueva reserva
     const newReservation = await Reservation.create({
       rental_start,
       rental_end,
-      adress_entrega,
+      address_entrega,
       userId,
-      machineryId
+      machineryId,
+      price,
+      payment_status,
+      delivery_status,
+      provider_id  // Asignar provider_id de la maquinaria
     });
 
     res.status(201).json(newReservation);
@@ -128,7 +146,7 @@ router.get('/', async (req, res) => {
  *               rental_end:
  *                 type: string
  *                 format: date-time
- *               adress_entrega:
+ *               address_entrega:
  *                 type: string
  *               userId:
  *                 type: string
@@ -136,6 +154,15 @@ router.get('/', async (req, res) => {
  *               machineryId:
  *                 type: string
  *                 format: uuid
+ *               price:
+ *                 type: number
+ *                 format: float
+ *               payment_status:
+ *                 type: string
+ *                 enum: [pendiente, pagado, rechazado]
+ *               delivery_status:
+ *                 type: string
+ *                 enum: [pendiente, en camino, entregado, cancelado]
  *     responses:
  *       200:
  *         description: Reserva actualizada exitosamente
@@ -146,7 +173,7 @@ router.get('/', async (req, res) => {
  */
 router.put('/:id', async (req, res) => {
   try {
-    const { rental_start, rental_end, adress_entrega, userId, machineryId } = req.body;
+    const { rental_start, rental_end, address_entrega, userId, machineryId, price, payment_status, delivery_status } = req.body;
 
     // Verificar si la reserva existe
     const reservation = await Reservation.findByPk(req.params.id);
@@ -155,7 +182,16 @@ router.put('/:id', async (req, res) => {
     }
 
     // Actualizar los datos
-    await reservation.update({ rental_start, rental_end, adress_entrega, userId, machineryId });
+    await reservation.update({
+      rental_start,
+      rental_end,
+      address_entrega,
+      userId,
+      machineryId,
+      price,
+      payment_status,
+      delivery_status
+    });
 
     res.status(200).json({ message: 'Reserva actualizada exitosamente' });
   } catch (error) {
@@ -200,4 +236,56 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /reservations/{id}/qrcode:
+ *   get:
+ *     tags:
+ *       - Reservations
+ *     summary: Genera un código QR para una reserva
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: ID de la reserva
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Imagen del código QR en formato PNG
+ *       404:
+ *         description: Reserva no encontrada
+ *       500:
+ *         description: Error al generar el código QR
+ */
+const QRCode = require('qrcode');  // Importa la librería qrcode
+
+router.get('/:id/qrcode', async (req, res) => {
+  try {
+    const reservation = await Reservation.findByPk(req.params.id);
+
+    if (!reservation) {
+      return res.status(404).json({ error: 'Reserva no encontrada' });
+    }
+
+    const qrText = `ID: ${reservation.id} | Total: $${reservation.price.toFixed(2)}`;
+
+    // Genera el código QR como una imagen PNG
+    QRCode.toBuffer(qrText, { type: 'png' }, (err, buffer) => {
+      if (err) {
+        return res.status(500).json({ error: 'Error al generar código QR', details: err.message });
+      }
+
+      res.set('Content-Type', 'image/png');
+      res.send(buffer);
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al generar código QR', details: error.message });
+  }
+});
+
 module.exports = router;
+
+
+

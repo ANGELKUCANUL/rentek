@@ -9,7 +9,7 @@ const paymentRoutes = require('./routes/payments');
 const emailRoutes = require('./routes/email');
 const providerRoutes = require('./routes/Provider');
 const uploadRoutes = require('./routes/uploadRoutes');
-
+const card_method = require('./routes/card_method');
 
 // Nombre en minúsculas
 require('dotenv').config();
@@ -42,6 +42,7 @@ app.use('/payments', paymentRoutes);
 app.use('/email', emailRoutes);
 app.use('/providers', providerRoutes); // Nombre en plural y en minúsculas
 app.use('/api', uploadRoutes);
+app.use('/payment-methods',card_method);
 
 // Conectar a la base de datos
 sequelize.sync({ alter: true }).then(() => {
@@ -54,5 +55,5 @@ sequelize.sync({ alter: true }).then(() => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
-  console.log('')
+  console.log(`📄 Documentación Swagger en http://localhost:${PORT}/api-docs`);
 });
