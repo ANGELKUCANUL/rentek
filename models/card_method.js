@@ -27,10 +27,7 @@ const PaymentMethod = sequelize.define('PaymentMethod', {
       this.setDataValue('cvv', encryptCVV(value)); 
     }
   },
-  payment_status: { 
-    type: DataTypes.ENUM('pendiente', 'pagado', 'fallido'), 
-    defaultValue: 'pendiente' 
-  }
+  
 });
 
 // Método para encriptar el número de tarjeta (solo un ejemplo, debes usar una librería segura como `crypto` o `bcrypt`)

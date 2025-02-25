@@ -1,54 +1,57 @@
 const express = require('express');
 const router = express.Router();
 const PaymentMethod = require('../models/card_method.js');
-const bwipjs = require('bwip-js'); // Librería para generar código de barras
-
 
 /**
  * @swagger
  * tags:
- *   - name: PaymentMethods
- *     description: Operaciones relacionadas con los métodos de pago
+ *   name: PaymentMethods
+ *   description: Endpoints para la gestión de métodos de pago con tarjeta
  */
 
 /**
  * @swagger
  * /payment-methods:
  *   post:
- *     tags:
- *       - PaymentMethods
- *     summary: Crear un nuevo método de pago con tarjeta
+ *     summary: Registrar un nuevo método de pago con tarjeta
+ *     tags: [PaymentMethods]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - card_holder
+ *               - card_number
+ *               - expiration_date
+ *               - cvv
  *             properties:
  *               card_holder:
  *                 type: string
+ *                 description: Nombre del titular de la tarjeta
  *               card_number:
  *                 type: string
+ *                 description: Número de la tarjeta de crédito o débito
  *               expiration_date:
  *                 type: string
+ *                 description: Fecha de vencimiento en formato MM/YY
  *               cvv:
  *                 type: string
- *               payment_status:
- *                 type: string
- *                 enum: [pendiente, pagado, fallido]
+ *                 description: Código de seguridad de la tarjeta
  *     responses:
  *       201:
  *         description: Método de pago creado exitosamente
  *       400:
- *         description: Datos inválidos
+ *         description: Error en la solicitud, faltan datos obligatorios
  *       500:
- *         description: Error al crear el método de pago
+ *         description: Error del servidor al procesar la solicitud
  */
 router.post('/', async (req, res) => {
   try {
-    const { card_holder, card_number, expiration_date, cvv, payment_status } = req.body;
+    const { card_holder, card_number, expiration_date, cvv } = req.body;
 
-    if (!card_holder || !card_number || !expiration_date || !cvv || !payment_status) {
+    if (!card_holder || !card_number || !expiration_date || !cvv) {
       return res.status(400).json({ error: 'Faltan campos obligatorios' });
     }
 
@@ -56,8 +59,7 @@ router.post('/', async (req, res) => {
       card_holder,
       card_number,
       expiration_date,
-      cvv,
-      payment_status
+      cvv
     });
 
     res.status(201).json(newPaymentMethod);
@@ -70,14 +72,13 @@ router.post('/', async (req, res) => {
  * @swagger
  * /payment-methods:
  *   get:
- *     tags:
- *       - PaymentMethods
- *     summary: Obtener todos los métodos de pago
+ *     summary: Obtener la lista de métodos de pago registrados
+ *     tags: [PaymentMethods]
  *     responses:
  *       200:
- *         description: Lista de métodos de pago
+ *         description: Lista de métodos de pago obtenida exitosamente
  *       500:
- *         description: Error al obtener los métodos de pago
+ *         description: Error del servidor al procesar la solicitud
  */
 router.get('/', async (req, res) => {
   try {
@@ -92,9 +93,8 @@ router.get('/', async (req, res) => {
  * @swagger
  * /payment-methods/{id}:
  *   put:
- *     tags:
- *       - PaymentMethods
- *     summary: Actualizar un método de pago por su ID
+ *     summary: Actualizar un método de pago existente
+ *     tags: [PaymentMethods]
  *     parameters:
  *       - in: path
  *         name: id
@@ -118,20 +118,17 @@ router.get('/', async (req, res) => {
  *                 type: string
  *               cvv:
  *                 type: string
- *               payment_status:
- *                 type: string
- *                 enum: [pendiente, pagado, fallido]
  *     responses:
  *       200:
- *         description: Método de pago actualizado exitosamente
+ *         description: Método de pago actualizado correctamente
  *       404:
- *         description: Método de pago no encontrado
+ *         description: No se encontró el método de pago
  *       500:
- *         description: Error al actualizar el método de pago
+ *         description: Error del servidor al procesar la solicitud
  */
 router.put('/:id', async (req, res) => {
   try {
-    const { card_holder, card_number, expiration_date, cvv, payment_status } = req.body;
+    const { card_holder, card_number, expiration_date, cvv } = req.body;
 
     const paymentMethod = await PaymentMethod.findByPk(req.params.id);
     if (!paymentMethod) {
@@ -142,8 +139,7 @@ router.put('/:id', async (req, res) => {
       card_holder,
       card_number,
       expiration_date,
-      cvv,
-      payment_status
+      cvv
     });
 
     res.status(200).json({ message: 'Método de pago actualizado exitosamente' });
@@ -156,9 +152,8 @@ router.put('/:id', async (req, res) => {
  * @swagger
  * /payment-methods/{id}:
  *   delete:
- *     tags:
- *       - PaymentMethods
- *     summary: Eliminar un método de pago por su ID
+ *     summary: Eliminar un método de pago
+ *     tags: [PaymentMethods]
  *     parameters:
  *       - in: path
  *         name: id
@@ -169,11 +164,11 @@ router.put('/:id', async (req, res) => {
  *           format: uuid
  *     responses:
  *       200:
- *         description: Método de pago eliminado exitosamente
+ *         description: Método de pago eliminado correctamente
  *       404:
- *         description: Método de pago no encontrado
+ *         description: No se encontró el método de pago
  *       500:
- *         description: Error al eliminar el método de pago
+ *         description: Error del servidor al procesar la solicitud
  */
 router.delete('/:id', async (req, res) => {
   try {
@@ -188,6 +183,5 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ error: 'Error al eliminar el método de pago', details: error.message });
   }
 });
-
 
 module.exports = router;
