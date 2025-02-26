@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const bcrypt = require('bcrypt');
 
 /**
  * @swagger
@@ -49,10 +48,8 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'El correo electrónico ya está en uso' });
     }
 
-    // Hashear la contraseña
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = await User.create({ name, email, password: hashedPassword, phoneNumber });
+    // No se hace hash de la contraseña
+    const newUser = await User.create({ name, email, password, phoneNumber });
     res.status(200).json(newUser);
   } catch (error) {
     res.status(500).json({ error: 'Error al crear el usuario' });
@@ -121,11 +118,9 @@ router.put('/:id', async (req, res) => {
   try {
     const { name, email, password, phoneNumber } = req.body;
 
-    // Hashear la nueva contraseña si es que se está actualizando
-    const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
-
+    // No se hace hash de la nueva contraseña si se está actualizando
     const updateData = { name, email, phoneNumber };
-    if (hashedPassword) updateData.password = hashedPassword;
+    if (password) updateData.password = password;
 
     const updatedUser = await User.update(updateData, { where: { id: req.params.id } });
     if (updatedUser[0] === 0) {
@@ -174,47 +169,51 @@ router.delete('/:id', async (req, res) => {
 /**
  * @swagger
  * /users/login:
- *   post:
- *     summary: Iniciar sesión con email y contraseña
+ *   get:
+ *     summary: Obtener los datos del usuario por correo y contraseña
  *     tags: [Users]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               email:
- *                 type: string
- *               password:
- *                 type: string
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         required: true
+ *         description: Correo electrónico del usuario
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: password
+ *         required: true
+ *         description: Contraseña del usuario
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
- *         description: Datos del usuario autenticado
- *       401:
- *         description: Credenciales incorrectas
+ *         description: Datos del usuario
+ *       404:
+ *         description: Usuario no encontrado o contraseña incorrecta
  *       500:
- *         description: Error en la autenticación
+ *         description: Error al obtener el usuario
  */
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+router.get('/login', async (req, res) => {
+  const { email, password } = req.query;
 
   try {
+    // Buscar el usuario en la base de datos por email
     const user = await User.findOne({ where: { email } });
 
     if (!user) {
-      return res.status(401).json({ error: 'Credenciales incorrectas' });
+      return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    // Verificar la contraseña con bcrypt
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
-      return res.status(401).json({ error: 'Credenciales incorrectas' });
+    // Verificar si la contraseña es correcta
+    if (user.password !== password) {
+      return res.status(404).json({ error: 'Contraseña incorrecta' });
     }
 
+    // Si todo es correcto, devolver los datos del usuario
     res.status(200).json(user);
   } catch (error) {
-    res.status(500).json({ error: 'Error en la autenticación' });
+    // Manejo de errores
+    res.status(500).json({ error: 'Error al obtener los datos del usuario' });
   }
 });
 

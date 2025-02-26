@@ -1,44 +1,42 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
+const User = require('./User');
 
-// Modelo de Pago por Tarjeta de Débito o Crédito
 const PaymentMethod = sequelize.define('PaymentMethod', {
-  card_holder: { 
-    type: DataTypes.STRING, 
-    allowNull: false 
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4, // Genera automáticamente un UUID
+    primaryKey: true,
   },
-  card_number: { 
-    type: DataTypes.STRING, 
-    allowNull: false, 
-    set(value) {
-      // Aquí podrías encriptar el número de tarjeta antes de almacenarlo
-      this.setDataValue('card_number', encryptCardNumber(value)); 
-    }
+  card_holder: {
+    type: DataTypes.STRING,
+    allowNull: false,
   },
-  expiration_date: { 
-    type: DataTypes.STRING, 
-    allowNull: false 
+  card_number: {
+    type: DataTypes.STRING,
+    allowNull: false,
   },
-  cvv: { 
-    type: DataTypes.STRING, 
-    allowNull: false, 
-    set(value) {
-      // También podrías encriptar el CVV antes de almacenarlo
-      this.setDataValue('cvv', encryptCVV(value)); 
-    }
+  expiration_date: {
+    type: DataTypes.STRING,
+    allowNull: false,
   },
-  
+  cvv: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  userId: {
+    type: DataTypes.UUID, // Cambiar de INTEGER a UUID
+    allowNull: false,
+    references: {
+      model: User,
+      key: 'id',
+    },
+  },
+}, {
+  tableName: 'payment_methods',
+  timestamps: false,
 });
 
-// Método para encriptar el número de tarjeta (solo un ejemplo, debes usar una librería segura como `crypto` o `bcrypt`)
-function encryptCardNumber(cardNumber) {
-  // Aquí utilizarías una librería de encriptación real para garantizar la seguridad
-  return cardNumber.split('').reverse().join(''); // Solo como ejemplo
-}
-
-// Método para encriptar el CVV (igual, usar librerías seguras como bcrypt o crypto)
-function encryptCVV(cvv) {
-  return cvv.split('').reverse().join(''); // Solo como ejemplo
-}
+PaymentMethod.belongsTo(User, { foreignKey: 'userId' });
 
 module.exports = PaymentMethod;

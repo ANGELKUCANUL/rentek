@@ -1,12 +1,43 @@
 const express = require('express');
 const router = express.Router();
-const PaymentMethod = require('../models/card_method.js');
+const PaymentMethod = require('../models/card_method');
+const User = require('../models/User');
 
 /**
  * @swagger
  * tags:
  *   name: PaymentMethods
  *   description: Endpoints para la gestión de métodos de pago con tarjeta
+ */
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     PaymentMethod:
+ *       type: object
+ *       properties:
+ *         card_holder:
+ *           type: string
+ *           description: Nombre del titular de la tarjeta
+ *         card_number:
+ *           type: string
+ *           description: Número de la tarjeta de crédito o débito
+ *         expiration_date:
+ *           type: string
+ *           description: Fecha de vencimiento en formato MM/YY
+ *         cvv:
+ *           type: string
+ *           description: Código de seguridad de la tarjeta
+ *         userId:
+ *           type: string
+ *           description: ID del usuario que asocia el método de pago
+ *       required:
+ *         - card_holder
+ *         - card_number
+ *         - expiration_date
+ *         - cvv
+ *         - userId
  */
 
 /**
@@ -20,25 +51,7 @@ const PaymentMethod = require('../models/card_method.js');
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - card_holder
- *               - card_number
- *               - expiration_date
- *               - cvv
- *             properties:
- *               card_holder:
- *                 type: string
- *                 description: Nombre del titular de la tarjeta
- *               card_number:
- *                 type: string
- *                 description: Número de la tarjeta de crédito o débito
- *               expiration_date:
- *                 type: string
- *                 description: Fecha de vencimiento en formato MM/YY
- *               cvv:
- *                 type: string
- *                 description: Código de seguridad de la tarjeta
+ *             $ref: '#/components/schemas/PaymentMethod'
  *     responses:
  *       201:
  *         description: Método de pago creado exitosamente
@@ -49,9 +62,9 @@ const PaymentMethod = require('../models/card_method.js');
  */
 router.post('/', async (req, res) => {
   try {
-    const { card_holder, card_number, expiration_date, cvv } = req.body;
+    const { card_holder, card_number, expiration_date, cvv, userId } = req.body;
 
-    if (!card_holder || !card_number || !expiration_date || !cvv) {
+    if (!card_holder || !card_number || !expiration_date || !cvv || !userId) {
       return res.status(400).json({ error: 'Faltan campos obligatorios' });
     }
 
@@ -59,7 +72,8 @@ router.post('/', async (req, res) => {
       card_holder,
       card_number,
       expiration_date,
-      cvv
+      cvv,
+      userId,
     });
 
     res.status(201).json(newPaymentMethod);
@@ -82,7 +96,9 @@ router.post('/', async (req, res) => {
  */
 router.get('/', async (req, res) => {
   try {
-    const paymentMethods = await PaymentMethod.findAll();
+    const paymentMethods = await PaymentMethod.findAll({
+      include: [{ model: User, attributes: ['id', 'name', 'email'] }]
+    });
     res.status(200).json(paymentMethods);
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener los métodos de pago', details: error.message });
@@ -99,7 +115,6 @@ router.get('/', async (req, res) => {
  *       - in: path
  *         name: id
  *         required: true
- *         description: ID del método de pago a actualizar
  *         schema:
  *           type: string
  *           format: uuid
@@ -129,19 +144,13 @@ router.get('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { card_holder, card_number, expiration_date, cvv } = req.body;
-
     const paymentMethod = await PaymentMethod.findByPk(req.params.id);
+
     if (!paymentMethod) {
       return res.status(404).json({ error: 'Método de pago no encontrado' });
     }
 
-    await paymentMethod.update({
-      card_holder,
-      card_number,
-      expiration_date,
-      cvv
-    });
-
+    await paymentMethod.update({ card_holder, card_number, expiration_date, cvv });
     res.status(200).json({ message: 'Método de pago actualizado exitosamente' });
   } catch (error) {
     res.status(500).json({ error: 'Error al actualizar el método de pago', details: error.message });
@@ -158,7 +167,6 @@ router.put('/:id', async (req, res) => {
  *       - in: path
  *         name: id
  *         required: true
- *         description: ID del método de pago a eliminar
  *         schema:
  *           type: string
  *           format: uuid
@@ -181,6 +189,52 @@ router.delete('/:id', async (req, res) => {
     res.status(200).json({ message: 'Método de pago eliminado exitosamente' });
   } catch (error) {
     res.status(500).json({ error: 'Error al eliminar el método de pago', details: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /payment-methods/user/{userId}:
+ *   get:
+ *     summary: Obtener métodos de pago por ID de usuario
+ *     tags: [PaymentMethods]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID del usuario cuyos métodos de pago se desean obtener
+ *     responses:
+ *       200:
+ *         description: Métodos de pago encontrados
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/PaymentMethod'
+ *       404:
+ *         description: No se encontraron métodos de pago para el usuario
+ *       500:
+ *         description: Error del servidor al procesar la solicitud
+ */
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const paymentMethods = await PaymentMethod.findAll({
+      where: { userId },
+      include: [{ model: User, attributes: ['id', 'name', 'email'] }]
+    });
+
+    if (!paymentMethods.length) {
+      return res.status(404).json({ error: 'No se encontraron métodos de pago para este usuario' });
+    }
+
+    res.status(200).json(paymentMethods);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener los métodos de pago', details: error.message });
   }
 });
 
