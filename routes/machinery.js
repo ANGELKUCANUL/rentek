@@ -261,4 +261,32 @@ router.delete('/bulk', async (req, res) => {
   }
 });
 
+
+// ==========================
+// 🔹 GET: Contar maquinarias
+// ==========================
+/**
+ * @swagger
+ * /machinery/count:
+ *   get:
+ *     tags:
+ *       - Machinery
+ *     summary: Contar el total de maquinarias
+ *     responses:
+ *       200: { description: Número total de maquinarias }
+ *       500: { description: Error al contar maquinarias }
+ */
+router.get('/count', async (req, res) => {
+  try {
+    // Usamos Sequelize para contar el total de registros en la tabla 'Machinery'
+    const count = await Machinery.count();
+
+    // Devolvemos el conteo en la respuesta
+    res.status(200).json({ total: count });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al contar maquinarias', details: error.message });
+  }
+});
+
+
 module.exports = router;
