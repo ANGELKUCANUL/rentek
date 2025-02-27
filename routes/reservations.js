@@ -120,6 +120,45 @@ router.get('/', async (req, res) => {
 
 /**
  * @swagger
+ * /reservations/user/{userId}:
+ *   get:
+ *     tags:
+ *       - Reservations
+ *     summary: Obtener todas las reservas de un usuario por su ID
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         description: ID del usuario cuyas reservas se quieren obtener
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Lista de reservas del usuario
+ *       404:
+ *         description: No se encontraron reservas para el usuario
+ *       500:
+ *         description: Error al obtener las reservas
+ */
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const reservations = await Reservation.findAll({ where: { userId } });
+
+    if (!reservations || reservations.length === 0) {
+      return res.status(404).json({ error: 'No se encontraron reservas para este usuario' });
+    }
+
+    res.status(200).json(reservations);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener las reservas', details: error.message });
+  }
+});
+
+
+/**
+ * @swagger
  * /reservations/{id}:
  *   put:
  *     tags:
@@ -282,6 +321,43 @@ router.get('/:id/qrcode', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Error al generar código QR', details: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /reservations/provider/{providerId}:
+ *   get:
+ *     tags:
+ *       - Reservations
+ *     summary: Obtener todas las reservas por provider_id
+ *     parameters:
+ *       - in: path
+ *         name: providerId
+ *         required: true
+ *         description: ID del proveedor cuyas reservas se quieren obtener
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lista de reservas del proveedor
+ *       404:
+ *         description: No se encontraron reservas para el proveedor
+ *       500:
+ *         description: Error al obtener las reservas
+ */
+router.get('/provider/:providerId', async (req, res) => {
+  try {
+    const { providerId } = req.params;
+    const reservations = await Reservation.findAll({ where: { provider_id: providerId } });
+
+    if (!reservations || reservations.length === 0) {
+      return res.status(404).json({ error: 'No se encontraron reservas para este proveedor' });
+    }
+
+    res.status(200).json(reservations);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener las reservas', details: error.message });
   }
 });
 
