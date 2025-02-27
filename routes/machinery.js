@@ -128,30 +128,32 @@ router.get('/by-provider/:provider_id', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener maquinarias', details: error.message });
   }
 });
+
+// ==========================
+// 🔹 GET: Obtener maquinarias con proveedor
+// ==========================
 /**
  * @swagger
  * /machinery/with-provider:
  *   get:
  *     tags:
  *       - Machinery
- *     summary: Obtener todas las maquinarias junto con su proveedor
+ *     summary: Obtener todas las maquinarias junto con sus proveedores
  *     responses:
- *       200:
- *         description: Lista de maquinarias con su proveedor
- *       500:
- *         description: Error al obtener maquinarias
+ *       200: { description: Lista de maquinarias con proveedores }
+ *       500: { description: Error al obtener maquinarias }
  */
 router.get('/with-provider', async (req, res) => {
   try {
     const machinery = await Machinery.findAll({
-      include: [{
+      include: {
         model: Provider,
-        attributes: ['id', 'name', 'email', 'phoneNumber', 'rating']
-      }]
+        as: 'provider',
+      },
     });
+
     res.status(200).json(machinery);
   } catch (error) {
-    console.error('Error al obtener maquinarias:', error);
     res.status(500).json({ error: 'Error al obtener maquinarias', details: error.message });
   }
 });
