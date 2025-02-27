@@ -156,15 +156,22 @@ router.post('/bulk', async (req, res) => {
 });
 
 // ==========================
-// 🔹 POST: Crear una maquinaria
+// 🔹 POST: Crear una maquinaria asociada a un proveedor
 // ==========================
 /**
  * @swagger
- * /machinery:
+ * /machinery/{provider_id}:
  *   post:
  *     tags:
  *       - Machinery
- *     summary: Crear una nueva maquinaria
+ *     summary: Crear una nueva maquinaria asociada a un proveedor
+ *     parameters:
+ *       - in: path
+ *         name: provider_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del proveedor
  *     requestBody:
  *       required: true
  *       content:
@@ -179,18 +186,18 @@ router.post('/bulk', async (req, res) => {
  *               rental_price: { type: number }
  *               image_code: { type: string }
  *               state: { type: boolean }
- *               provider_id: { type: string, format: uuid }
  *     responses:
  *       201: { description: Maquinaria creada exitosamente }
  *       400: { description: Datos inválidos o proveedor no encontrado }
  *       500: { description: Error al crear maquinaria }
  */
-router.post('/', async (req, res) => {
+router.post('/:provider_id', async (req, res) => {
   try {
-    const { name, brand, location, description, rental_price, image_code, state, provider_id } = req.body;
+    const { provider_id } = req.params;
+    const { name, brand, location, description, rental_price, image_code, state } = req.body;
 
     // Validar que se envíen todos los campos requeridos
-    if (!name || !brand || !location || !rental_price || !provider_id) {
+    if (!name || !brand || !location || !rental_price) {
       return res.status(400).json({ error: 'Faltan campos obligatorios' });
     }
 
@@ -200,7 +207,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: `Proveedor con ID ${provider_id} no encontrado` });
     }
 
-    // Crear la nueva maquinaria
+    // Crear la nueva maquinaria asociada al proveedor
     const newMachinery = await Machinery.create({
       name,
       brand,
