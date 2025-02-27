@@ -1,5 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
+const Machinery = require('../models/Machinery'); // Importación correcta
+
 
 const Provider = sequelize.define('Provider', {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true }, // Agregar ID único

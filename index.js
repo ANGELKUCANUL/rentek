@@ -11,6 +11,7 @@ const providerRoutes = require('./routes/Provider');
 const uploadRoutes = require('./routes/uploadRoutes');
 const card_method = require('./routes/card_method');
 
+
 // Nombre en minúsculas
 require('dotenv').config();
 const cors = require('cors');
