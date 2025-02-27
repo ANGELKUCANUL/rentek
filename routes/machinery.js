@@ -12,7 +12,6 @@ const Provider = require('../models/Provider');
 
 // ==========================
 // 🔹 GET: Obtener maquinarias
-// ==========================
 /**
  * @swagger
  * /machinery:
