@@ -156,6 +156,70 @@ router.post('/bulk', async (req, res) => {
 });
 
 // ==========================
+// 🔹 POST: Crear una maquinaria
+// ==========================
+/**
+ * @swagger
+ * /machinery:
+ *   post:
+ *     tags:
+ *       - Machinery
+ *     summary: Crear una nueva maquinaria
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               brand: { type: string }
+ *               location: { type: string }
+ *               description: { type: string }
+ *               rental_price: { type: number }
+ *               image_code: { type: string }
+ *               state: { type: boolean }
+ *               provider_id: { type: string, format: uuid }
+ *     responses:
+ *       201: { description: Maquinaria creada exitosamente }
+ *       400: { description: Datos inválidos o proveedor no encontrado }
+ *       500: { description: Error al crear maquinaria }
+ */
+router.post('/', async (req, res) => {
+  try {
+    const { name, brand, location, description, rental_price, image_code, state, provider_id } = req.body;
+
+    // Validar que se envíen todos los campos requeridos
+    if (!name || !brand || !location || !rental_price || !provider_id) {
+      return res.status(400).json({ error: 'Faltan campos obligatorios' });
+    }
+
+    // Verificar si el proveedor existe
+    const providerExists = await Provider.findByPk(provider_id);
+    if (!providerExists) {
+      return res.status(400).json({ error: `Proveedor con ID ${provider_id} no encontrado` });
+    }
+
+    // Crear la nueva maquinaria
+    const newMachinery = await Machinery.create({
+      name,
+      brand,
+      location,
+      description,
+      rental_price,
+      image_code,
+      state,
+      provider_id,
+    });
+
+    res.status(201).json(newMachinery);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al crear maquinaria', details: error.message });
+  }
+});
+
+
+// ==========================
 // 🔹 PUT: Actualizar maquinaria
 // ==========================
 /**
