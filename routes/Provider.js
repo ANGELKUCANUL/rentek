@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const Provider = require('../models/Provider');
-const Machinery = require('../models/Machinery'); // Asegúrate de que la ruta sea correcta
-
 
 /**
  * @swagger
@@ -323,79 +321,5 @@ router.get('/login', async (req, res) => {
         res.status(500).json({ error: 'Error al obtener los datos del proveedor' });
     }
 });
-
-/**
- * @swagger
- * /providers/{provider_id}/machinery:
- *   post:
- *     tags:
- *       - Provider
- *     summary: Un proveedor agrega nuevas maquinarias
- *     parameters:
- *       - in: path
- *         name: provider_id
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: ID del proveedor que agrega la maquinaria
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 example: "Excavadora CAT 320"
- *               brand:
- *                 type: string
- *                 example: "Caterpillar"
- *               location:
- *                 type: string
- *                 example: "Ciudad de México"
- *               description:
- *                 type: string
- *                 example: "Excavadora de alto rendimiento con capacidad de 20 toneladas."
- *               rental_price:
- *                 type: number
- *                 example: 1500
- *               image_code:
- *                 type: string
- *                 example: "excavadora_cat_320"
- *               state:
- *                 type: boolean
- *                 example: true
- *     responses:
- *       201:
- *         description: Máquina creada exitosamente
- *       400:
- *         description: Datos inválidos o proveedor no encontrado
- *       500:
- *         description: Error al crear la máquina
- */
-router.post('/:provider_id/machinery', async (req, res) => {
-    try {
-      const { provider_id } = req.params;
-      const { name, brand, location, description, rental_price, image_code, state } = req.body;
-  
-      // Verificar si el proveedor existe
-      const providerExists = await Provider.findByPk(provider_id);
-      if (!providerExists) {
-        return res.status(400).json({ error: `Proveedor con ID ${provider_id} no existe` });
-      }
-  
-      // Crear la nueva maquinaria
-      const newMachinery = await Machinery.create({
-        name, brand, location, description, rental_price, image_code, state, provider_id
-      });
-  
-      res.status(201).json(newMachinery);
-    } catch (error) {
-      res.status(500).json({ error: 'Error al crear la máquina', details: error.message });
-    }
-  });
-  
 
 module.exports = router;

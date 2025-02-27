@@ -3,8 +3,6 @@ const router = express.Router();
 const Machinery = require('../models/Machinery');
 const Provider = require('../models/Provider');
 
-
-
 /**
  * @swagger
  * tags:
@@ -34,55 +32,6 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener maquinarias', details: error.message });
   }
 });
-/**
- * @swagger
- * /machinery/{id}:
- *   get:
- *     tags:
- *       - Machinery
- *     summary: Obtener maquinaria por ID
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: ID de la maquinaria
- *     responses:
- *       200:
- *         description: Maquinaria encontrada
- *       400:
- *         description: ID de maquinaria inválido
- *       404:
- *         description: Maquinaria no encontrada
- *       500:
- *         description: Error al obtener maquinaria
- */
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Validamos si el ID es válido (uuid)
-    if (!id) {
-      return res.status(400).json({ error: 'Debe proporcionar un ID válido de maquinaria' });
-    }
-
-    // Buscamos la maquinaria por ID
-    const machinery = await Machinery.findByPk(id);
-
-    // Si no se encuentra la maquinaria, devolvemos un 404
-    if (!machinery) {
-      return res.status(404).json({ error: 'Maquinaria no encontrada' });
-    }
-
-    // Respondemos con los datos de la maquinaria encontrada
-    res.status(200).json(machinery);
-  } catch (error) {
-    res.status(500).json({ error: 'Error al obtener maquinaria', details: error.message });
-  }
-});
-
  /**
  * @swagger
  * /machinery/by-provider/{provider_id}:
