@@ -84,50 +84,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
- /**
- * @swagger
- * /machinery/by-provider/{provider_id}:
- *   get:
- *     tags:
- *       - Machinery
- *     summary: Obtener maquinarias por proveedor
- *     parameters:
- *       - in: path
- *         name: provider_id
- *         required: true
- *         schema:
- *           type: string
- *         description: ID del proveedor
- *     responses:
- *       200: { description: Lista de maquinarias del proveedor }
- *       400: { description: ID de proveedor inválido }
- *       404: { description: No se encontraron maquinarias para el proveedor }
- *       500: { description: Error al obtener maquinarias }
- */
-router.get('/by-provider/:provider_id', async (req, res) => {
-  try {
-    const { provider_id } = req.params;
-
-    if (!provider_id) {
-      return res.status(400).json({ error: 'Debe proporcionar un ID de proveedor' });
-    }
-
-    const providerExists = await Provider.findByPk(provider_id);
-    if (!providerExists) {
-      return res.status(404).json({ error: `Proveedor con ID ${provider_id} no encontrado` });
-    }
-
-    const machinery = await Machinery.findAll({ where: { provider_id } });
-
-    if (machinery.length === 0) {
-      return res.status(404).json({ message: 'No se encontraron maquinarias para este proveedor' });
-    }
-
-    res.status(200).json(machinery);
-  } catch (error) {
-    res.status(500).json({ error: 'Error al obtener maquinarias', details: error.message });
-  }
-});
 
 // ==========================
 // 🔹 GET: Obtener maquinarias con proveedor
