@@ -60,52 +60,6 @@ router.post('/upload', upload.single('image'), async (req, res) => {
         res.status(500).json({ message: 'Error al subir la imagen', error: error.message });
     }
 });
-/**
- * @swagger
- * /api/upload/images:
- *   get:
- *     tags:
- *       - Upload
- *     summary: Obtiene todas las imágenes subidas a Cloudinary
- *     description: Retorna una lista de URLs e IDs de las imágenes subidas a la carpeta "maquinaria".
- *     responses:
- *       200:
- *         description: Lista de imágenes obtenida con éxito
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 images:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       public_id:
- *                         type: string
- *                       secure_url:
- *                         type: string
- *       500:
- *         description: Error al obtener las imágenes
- */
-router.get('/upload/images', async (req, res) => {
-    try {
-        const { resources } = await cloudinary.v2.api.resources({
-            type: 'upload',
-            prefix: 'maquinaria', // Filtra solo la carpeta "maquinaria"
-            max_results: 50 // Puedes ajustar este número
-        });
 
-        const images = resources.map(img => ({
-            public_id: img.public_id,
-            secure_url: img.secure_url
-        }));
-
-        res.json({ images });
-    } catch (error) {
-        console.error('Error al obtener imágenes:', error);
-        res.status(500).json({ message: 'Error al obtener imágenes', error: error.message });
-    }
-});
 
 module.exports = router;
