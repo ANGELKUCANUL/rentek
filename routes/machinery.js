@@ -2,6 +2,21 @@ const express = require('express');
 const router = express.Router();
 const Machinery = require('../models/Machinery');
 const Provider = require('../models/Provider');
+const multer = require('multer');
+const uploadImage = require('../models/uploadService');
+
+const storage = multer.memoryStorage();
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // Límite de 5MB
+    fileFilter: (req, file, cb) => {
+        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowedMimeTypes.includes(file.mimetype)) {
+            return cb(new Error('Formato de imagen no permitido'), false);
+        }
+        cb(null, true);
+    }
+});
 
 /**
  * @swagger
@@ -175,7 +190,7 @@ router.post('/bulk', async (req, res) => {
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
@@ -184,44 +199,53 @@ router.post('/bulk', async (req, res) => {
  *               location: { type: string }
  *               description: { type: string }
  *               rental_price: { type: number }
- *               image_code: { type: string }
  *               state: { type: boolean }
+ *               image: 
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       201: { description: Maquinaria creada exitosamente }
  *       400: { description: Datos inválidos o proveedor no encontrado }
  *       500: { description: Error al crear maquinaria }
  */
-router.post('/:provider_id', async (req, res) => {
+router.post('/:provider_id', upload.single('image'), async (req, res) => {
   try {
-    const { provider_id } = req.params;
-    const { name, brand, location, description, rental_price, image_code, state } = req.body;
+      const { provider_id } = req.params;
+      const { name, brand, location, description, rental_price, state } = req.body;
 
-    // Validar que se envíen todos los campos requeridos
-    if (!name || !brand || !location || !rental_price) {
-      return res.status(400).json({ error: 'Faltan campos obligatorios' });
-    }
+      // Validar campos obligatorios
+      if (!name || !brand || !location || !rental_price) {
+          return res.status(400).json({ error: 'Faltan campos obligatorios' });
+      }
 
-    // Verificar si el proveedor existe
-    const providerExists = await Provider.findByPk(provider_id);
-    if (!providerExists) {
-      return res.status(400).json({ error: `Proveedor con ID ${provider_id} no encontrado` });
-    }
+      // Verificar si el proveedor existe
+      const providerExists = await Provider.findByPk(provider_id);
+      if (!providerExists) {
+          return res.status(400).json({ error: `Proveedor con ID ${provider_id} no encontrado` });
+      }
 
-    // Crear la nueva maquinaria asociada al proveedor
-    const newMachinery = await Machinery.create({
-      name,
-      brand,
-      location,
-      description,
-      rental_price,
-      image_code,
-      state,
-      provider_id,
-    });
+      // Subir la imagen a Cloudinary si se envió
+      let image_code = null;
+      if (req.file) {
+          image_code = await uploadImage(req.file);
+      }
 
-    res.status(201).json(newMachinery);
+      // Crear la maquinaria con la URL de la imagen
+      const newMachinery = await Machinery.create({
+          name,
+          brand,
+          location,
+          description,
+          rental_price,
+          image_code,
+          state,
+          provider_id,
+      });
+
+      res.status(201).json(newMachinery);
   } catch (error) {
-    res.status(500).json({ error: 'Error al crear maquinaria', details: error.message });
+      console.error('Error al crear maquinaria:', error);
+      res.status(500).json({ error: 'Error al crear maquinaria', details: error.message });
   }
 });
 
