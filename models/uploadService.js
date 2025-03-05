@@ -1,25 +1,16 @@
 const cloudinary = require('../config/cloudinary');
-const streamifier = require('streamifier');
 
-const uploadImage = (file) => {
-    return new Promise((resolve, reject) => {
-        if (!file || !file.buffer) {
-            console.error('⚠ Archivo no válido o buffer vacío');
-            return reject(new Error('Archivo no válido o buffer vacío'));
-        }
-
+const uploadImage = async (filePath, publicId = null) => {
+    try {
         const options = { folder: 'maquinaria' }; // Carpeta en Cloudinary
+        if (publicId) options.public_id = publicId; // Si se pasa un public_id, lo usa
 
-        const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
-            if (error) {
-                console.error('❌ Error en Cloudinary:', error);
-                return reject(new Error('No se pudo subir la imagen'));
-            }
-            resolve(result.secure_url);
-        });
-
-        streamifier.createReadStream(file.buffer).pipe(stream);
-    });
+        const result = await cloudinary.uploader.upload(filePath, options);
+        return result.secure_url; // Devuelve la URL de la imagen
+    } catch (error) {
+        console.error('Error al subir la imagen:', error);
+        throw new Error('No se pudo subir la imagen');
+    }
 };
 
 module.exports = uploadImage;

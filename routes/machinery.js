@@ -4,19 +4,10 @@ const Machinery = require('../models/Machinery');
 const Provider = require('../models/Provider');
 const multer = require('multer');
 const uploadImage = require('../models/uploadService');
+const upload = multer({ dest: 'uploads/' });
+
 
 const storage = multer.memoryStorage();
-const upload = multer({
-    storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // Límite de 5MB
-    fileFilter: (req, file, cb) => {
-        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
-        if (!allowedMimeTypes.includes(file.mimetype)) {
-            return cb(new Error('Formato de imagen no permitido'), false);
-        }
-        cb(null, true);
-    }
-});
 
 /**
  * @swagger
@@ -227,7 +218,14 @@ router.post('/:provider_id', upload.single('image'), async (req, res) => {
       // Subir la imagen a Cloudinary si se envió
       let image_code = null;
       if (req.file) {
-          image_code = await uploadImage(req.file);
+          console.log('✅ Imagen recibida:', req.file.path);
+          try {
+              image_code = await uploadImage(req.file.path);
+              console.log('🌐 URL de imagen:', image_code);
+          } catch (uploadError) {
+              console.error('❌ Error al subir la imagen:', uploadError);
+              return res.status(500).json({ error: 'Error al subir la imagen', details: uploadError.message });
+          }
       }
 
       // Crear la maquinaria con la URL de la imagen
@@ -244,11 +242,10 @@ router.post('/:provider_id', upload.single('image'), async (req, res) => {
 
       res.status(201).json(newMachinery);
   } catch (error) {
-      console.error('Error al crear maquinaria:', error);
+      console.error('❌ Error al crear maquinaria:', error);
       res.status(500).json({ error: 'Error al crear maquinaria', details: error.message });
   }
 });
-
 
 // ==========================
 // 🔹 PUT: Actualizar maquinaria
