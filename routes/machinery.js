@@ -5,6 +5,8 @@ const Provider = require('../models/Provider');
 const multer = require('multer');
 const uploadImage = require('../models/uploadService');
 const upload = multer({ dest: 'uploads/' });
+const Upload = require('../models/upload'); // Modelo de subida de imágenes
+
 
 
 const storage = multer.memoryStorage();
@@ -170,7 +172,7 @@ router.post('/bulk', async (req, res) => {
  *   post:
  *     tags:
  *       - Machinery
- *     summary: Crear una nueva maquinaria asociada a un proveedor
+ *     summary: Crear una nueva maquinaria asociada a un proveedor y guardar imagen en la tabla upload
  *     parameters:
  *       - in: path
  *         name: provider_id
@@ -195,7 +197,7 @@ router.post('/bulk', async (req, res) => {
  *                 type: string
  *                 format: binary
  *     responses:
- *       201: { description: Maquinaria creada exitosamente }
+ *       201: { description: Maquinaria creada exitosamente y guardada en la tabla upload }
  *       400: { description: Datos inválidos o proveedor no encontrado }
  *       500: { description: Error al crear maquinaria }
  */
@@ -240,7 +242,19 @@ router.post('/:provider_id', upload.single('image'), async (req, res) => {
           provider_id,
       });
 
-      res.status(201).json(newMachinery);
+      // Guardar la imagen en la tabla upload con el nombre de la máquina
+      if (image_code) {
+          await Upload.create({
+              image_url: image_code,
+              nombre_maquina: name, // Usa el nombre de la maquinaria
+          });
+          console.log('📂 Imagen guardada en la tabla upload');
+      }
+
+      res.status(201).json({ 
+          message: 'Maquinaria creada y imagen guardada en la tabla upload',
+          machinery: newMachinery 
+      });
   } catch (error) {
       console.error('❌ Error al crear maquinaria:', error);
       res.status(500).json({ error: 'Error al crear maquinaria', details: error.message });
