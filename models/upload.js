@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const Machinery = sequelize.define('upload', {
+const uploads = sequelize.define('upload', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -17,4 +17,4 @@ const Machinery = sequelize.define('upload', {
   }
 });
 
-module.exports = Machinery;
+module.exports = uploads;

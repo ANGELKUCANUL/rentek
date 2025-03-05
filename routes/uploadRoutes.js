@@ -1,18 +1,10 @@
 const express = require('express');
 const multer = require('multer');
 const uploadImage = require('../models/uploadService');
+const Upload = require('../models/upload'); // Modelo de Sequelize
 
 const router = express.Router();
-
-// Multer configura dónde guardar temporalmente las imágenes
 const upload = multer({ dest: 'uploads/' });
-
-/**
- * @swagger
- * tags:
- *   - name: Upload
- *     description: Operaciones de subida de imágenes
- */
 
 /**
  * @swagger
@@ -20,8 +12,8 @@ const upload = multer({ dest: 'uploads/' });
  *   post:
  *     tags:
  *       - Upload
- *     summary: Sube una imagen a Cloudinary
- *     description: Permite subir una imagen y obtener la URL de Cloudinary.
+ *     summary: Sube una imagen a Cloudinary y guarda los datos en la BD
+ *     description: Permite subir una imagen, recibir información adicional y guardarla en la base de datos.
  *     requestBody:
  *       required: true
  *       content:
@@ -32,9 +24,11 @@ const upload = multer({ dest: 'uploads/' });
  *               image:
  *                 type: string
  *                 format: binary
+ *               nombre_maquina:
+ *                 type: string
  *     responses:
  *       200:
- *         description: Imagen subida con éxito
+ *         description: Imagen subida y datos guardados con éxito
  *         content:
  *           application/json:
  *             schema:
@@ -44,22 +38,75 @@ const upload = multer({ dest: 'uploads/' });
  *                   type: string
  *                 imageUrl:
  *                   type: string
+ *                 nombre_maquina:
+ *                   type: string
  *       400:
- *         description: No se ha subido ninguna imagen
+ *         description: Datos insuficientes o imagen no subida
  *       500:
- *         description: Error al subir la imagen
+ *         description: Error en la operación
  */
 router.post('/upload', upload.single('image'), async (req, res) => {
     try {
-        if (!req.file) return res.status(400).json({ message: 'No se ha subido ninguna imagen' });
+        const { nombre_maquina } = req.body;
+        if (!req.file || !nombre_maquina) {
+            return res.status(400).json({ message: 'Faltan datos: imagen y nombre de la máquina son requeridos' });
+        }
 
+        // Sube la imagen a Cloudinary
         const imageUrl = await uploadImage(req.file.path);
-        res.json({ message: 'Imagen subida con éxito', imageUrl });
+
+        // Guarda los datos en la base de datos
+        const newUpload = await Upload.create({
+            image_url: imageUrl,
+            nombre_maquina
+        });
+
+        res.json({
+            message: 'Imagen subida y datos guardados con éxito',
+            imageUrl: newUpload.image_url,
+            nombre_maquina: newUpload.nombre_maquina
+        });
     } catch (error) {
         console.error('Error al subir la imagen:', error);
         res.status(500).json({ message: 'Error al subir la imagen', error: error.message });
     }
 });
 
+/**
+ * @swagger
+ * /api/upload:
+ *   get:
+ *     tags:
+ *       - Upload
+ *     summary: Obtiene todas las imágenes almacenadas en la BD
+ *     description: Retorna una lista de imágenes con sus respectivos nombres de maquinaria.
+ *     responses:
+ *       200:
+ *         description: Lista de imágenes obtenida con éxito
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   image_url:
+ *                     type: string
+ *                   nombre_maquina:
+ *                     type: string
+ *       500:
+ *         description: Error al obtener las imágenes
+ */
+router.get('/upload', async (req, res) => {
+    try {
+        const uploads = await Upload.findAll();
+        res.json(uploads);
+    } catch (error) {
+        console.error('Error al obtener las imágenes:', error);
+        res.status(500).json({ message: 'Error al obtener las imágenes', error: error.message });
+    }
+});
 
 module.exports = router;
