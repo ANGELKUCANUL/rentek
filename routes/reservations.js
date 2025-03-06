@@ -10,6 +10,9 @@ const qrcode = require('qrcode');
  * tags:
  *   - name: Reservations
  *     description: Operaciones relacionadas con las reservas
+ *   - name: Reservations method get
+ *     description: get relacionadas con las reservas
+ * 
  */
 
 /**
@@ -101,7 +104,7 @@ router.post('/', async (req, res) => {
  * /reservations:
  *   get:
  *     tags:
- *       - Reservations
+ *       - Reservations method get
  *     summary: Obtener todas las reservas
  *     responses:
  *       200:
@@ -123,7 +126,7 @@ router.get('/', async (req, res) => {
  * /reservations/user/{userId}:
  *   get:
  *     tags:
- *       - Reservations
+ *       - Reservations method get
  *     summary: Obtener todas las reservas de un usuario por su ID
  *     parameters:
  *       - in: path
@@ -280,7 +283,7 @@ router.delete('/:id', async (req, res) => {
  * /reservations/{id}/qrcode:
  *   get:
  *     tags:
- *       - Reservations
+ *       - Reservations method get
  *     summary: Genera un código QR para una reserva
  *     parameters:
  *       - in: path
@@ -329,7 +332,7 @@ router.get('/:id/qrcode', async (req, res) => {
  * /reservations/provider/{providerId}:
  *   get:
  *     tags:
- *       - Reservations
+ *       - Reservations method get
  *     summary: Obtener todas las reservas por provider_id
  *     parameters:
  *       - in: path

@@ -16,7 +16,7 @@ const storage = multer.memoryStorage();
  * tags:
  *   - name: Machinery
  *     description: Operaciones relacionadas con la maquinaria
- *   - name: Machinery met get
+ *   - name: Machinery method get
  *     description: gets relacionados con la maquinaria
  * 
  */
@@ -28,7 +28,7 @@ const storage = multer.memoryStorage();
  * /machinery:
  *   get:
  *     tags:
- *       - Machinery met get
+ *       - Machinery method get
  *     summary: Obtener todas las maquinarias
  *     responses:
  *       200: { description: Lista de maquinarias }
@@ -47,7 +47,7 @@ router.get('/', async (req, res) => {
  * /machinery/by-provider/{provider_id}:
  *   get:
  *     tags:
- *       - Machinery met get
+ *       - Machinery method get
  *     summary: Obtener maquinarias por proveedor
  *     parameters:
  *       - in: path
@@ -378,7 +378,7 @@ router.delete('/bulk', async (req, res) => {
  * /machinery/count:
  *   get:
  *     tags:
- *       - Machinery met get
+ *       - Machinery method get
  *     summary: Contar el total de maquinarias
  *     responses:
  *       200: { description: Número total de maquinarias }
