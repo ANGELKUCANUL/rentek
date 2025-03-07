@@ -1,15 +1,17 @@
 const express = require('express');
 const swaggerJsDoc = require('swagger-jsdoc');
+const axios = require("axios");
 const swaggerUi = require('swagger-ui-express');
 const sequelize = require('./config/database');
 const userRoutes = require('./routes/users');
 const machineryRoutes = require('./routes/machinery');
 const reservationRoutes = require('./routes/reservations');
-const paymentRoutes = require('./routes/payments');
 const emailRoutes = require('./routes/email');
 const providerRoutes = require('./routes/Provider');
 const uploadRoutes = require('./routes/uploadRoutes');
 const card_method = require('./routes/card_method');
+const paymentProcessingRoutes = require('./routes/paymentProcessing');
+
 
 
 // Nombre en minúsculas
@@ -39,11 +41,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.use('/users', userRoutes);
 app.use('/machinery', machineryRoutes);
 app.use('/reservations', reservationRoutes);
-app.use('/payments', paymentRoutes);
 app.use('/email', emailRoutes);
 app.use('/providers', providerRoutes); // Nombre en plural y en minúsculas
 app.use('/api', uploadRoutes);
 app.use('/payment-methods',card_method);
+app.use('/api/pagos', paymentProcessingRoutes);
+
 
 // Conectar a la base de datos
 sequelize.sync({ alter: true }).then(() => {
