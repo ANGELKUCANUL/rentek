@@ -14,14 +14,20 @@ router.post("/crear-preferencia", async (req, res) => {
         }
 
         const preferencia = {
-            items: [{ title: "Producto de Prueba", quantity: 1, unit_price: parseFloat(precio), currency_id: "MXN" }],
+            items: [{ 
+                title: "Producto de Prueba", 
+                quantity: 1, 
+                unit_price: parseFloat(precio), 
+                currency_id: "MXN" 
+            }],
             back_urls: {
-                success: "https://tusitio.com/api/pagos/success",
-                failure: "https://tusitio.com/api/pagos/failure",
-                pending: "https://tusitio.com/api/pagos/pending",
+                success: "miapp://success",
+                failure: "miapp://failure",
+                pending: "miapp://pending"
             },
             auto_return: "approved",
         };
+        
 
         const response = await axios.post("https://api.mercadopago.com/checkout/preferences", preferencia, {
             headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
