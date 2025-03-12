@@ -23,8 +23,8 @@ router.post("/crear-preferencia", async (req, res) => {
             }],
             back_urls: {
                 success: "miapp://success",
-                failure: "https://rentek.onrender.com/api/pagos/failure",
-                pending: "https://rentek.onrender.com/api/pagos/pending",
+                failure: "miapp://failure",
+                pending: "miapp://pending",
             },
             notification_url: "https://rentek.onrender.com/api/pagos/webhook",
             auto_return: "approved",
