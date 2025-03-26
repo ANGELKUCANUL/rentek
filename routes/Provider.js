@@ -272,53 +272,97 @@ router.delete('/:id', async (req, res) => {
         res.status(500).json({ error: 'Error al eliminar el proveedor', details: error.message });
     }
 });
-
 /**
  * @swagger
  * /providers/login:
- *   get:
+ *   post:
  *     tags:
  *       - Provider
- *     summary: Obtener los datos del proveedor por correo y contraseña
- *     parameters:
- *       - in: query
- *         name: email
- *         required: true
- *         description: Correo electrónico del proveedor
- *         schema:
- *           type: string
- *       - in: query
- *         name: password
- *         required: true
- *         description: Contraseña del proveedor
- *         schema:
- *           type: string
+ *     summary: Iniciar sesión de un proveedor
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: Correo electrónico del proveedor
+ *               password:
+ *                 type: string
+ *                 description: Contraseña del proveedor
  *     responses:
  *       200:
- *         description: Datos del proveedor
- *       404:
- *         description: Proveedor no encontrado o contraseña incorrecta
+ *         description: Inicio de sesión exitoso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                 phoneNumber:
+ *                   type: string
+ *                 rating:
+ *                   type: number
+ *       401:
+ *         description: Credenciales inválidas
  *       500:
- *         description: Error al obtener el proveedor
+ *         description: Error en el servidor
  */
-router.get('/login', async (req, res) => {
-    const { email, password } = req.query;
-
+router.post('/login', async (req, res) => {
     try {
-        const provider = await Provider.findOne({ where: { email } });
-        
+        const { email, password } = req.body;
+
+        // Validar que se proporcionaron email y password
+        if (!email || !password) {
+            return res.status(400).json({ 
+                error: 'Se requieren email y contraseña' 
+            });
+        }
+
+        // Buscar el proveedor por email
+        const provider = await Provider.findOne({ 
+            where: { email },
+            attributes: ['id', 'name', 'email', 'phoneNumber', 'rating', 'password']
+        });
+
         if (!provider) {
-            return res.status(404).json({ error: 'Proveedor no encontrado' });
+            return res.status(401).json({ 
+                error: 'Credenciales inválidas' 
+            });
         }
 
         // Verificar la contraseña
         if (provider.password !== password) {
-            return res.status(404).json({ error: 'Contraseña incorrecta' });
+            return res.status(401).json({ 
+                error: 'Credenciales inválidas' 
+            });
         }
 
-        res.status(200).json(provider);
+        // Crear objeto de respuesta sin la contraseña
+        const providerData = {
+            id: provider.id,
+            name: provider.name,
+            email: provider.email,
+            phoneNumber: provider.phoneNumber,
+            rating: provider.rating
+        };
+
+        res.status(200).json(providerData);
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener los datos del proveedor' });
+        res.status(500).json({ 
+            error: 'Error en el servidor', 
+            details: error.message 
+        });
     }
 });
 
